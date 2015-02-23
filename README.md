@@ -23,5 +23,11 @@ Legality - Legality (see dropdown)
 Rarity - [Rare, Uncommon, Common, Fixed, Premium, Promo, None]
 Type - [Ancestor, Celestial, Clock, Event, Follower, Holding, Item, Other, Personality, Proxy, Region, Ring, Sensei, Spell, Strategy, Stronghold, Territory, Wind]
 
+### TODO
+
+1. Re-implement the reprint function that spurred the creation of this whole thing, which was broken when i re-wrote a few pieces to make it faster
+2. better formatting for output
+3. the rest of the fields available on the site
+
 ### Disclaimer
 I am not affiliated at all with AEG, I’m just a fan who hates doing anything with the mouse. As this makes requests identically to the website, I do not *believe* this is in any violation of the site’s terms, but I would not bet money on that. 
