@@ -2,6 +2,7 @@ import requests
 import re
 import sys
 import argparse
+from progressbar import Counter, ProgressBar, SimpleProgress
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--title", help="title")
@@ -19,8 +20,16 @@ opts = vars(args)
 if args.output not in ['names','ids','info']:
     print "invalid output specified"
     sys.exit(1)
-else:
-    print args.output
+
+argcounter = 0
+for each in opts:
+    if opts[each] is not None:
+        argcounter += 1
+
+if argcounter < 2:
+    print "You must supply at least one search criteria"
+    parser.print_help()
+    sys.exit(1)
 
 def getCard(cardid):
     cardurl = 'http://imperialassembly.com/oracle/docard'
@@ -119,8 +128,9 @@ def doSearch(output='names', **kwargs):
 
     allresults = []
     print "query returned %s pages." % str(maxpages)
+    pbar = ProgressBar(widgets=[SimpleProgress()], maxval=maxpages).start()
     for page in range(0, maxpages):
-        print "working on page  %s." % str(page+1)
+        pbar.update(page + 1)
         for each in doSearchByPage(page=str(page+1),**kwargs):
             if output == "names":
                 allresults.append(str(each[0]).replace('&#149;','-'))
@@ -128,8 +138,9 @@ def doSearch(output='names', **kwargs):
                 allresults.append([str(each[0]).replace('&#149;','-'),str(each[1])])
             elif output == "info":
                 allresults.append(getCard(each[1]))
-
+    pbar.finish()
     return allresults
+
 results = doSearch(**opts)
 if args.output == "info":
     for each in results:
