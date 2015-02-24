@@ -13,7 +13,7 @@ parser.add_argument("-r", "--rarity", help="rarity")
 parser.add_argument("-x", "--text", help="card text")
 parser.add_argument("-y", "--type", help="card type")
 parser.add_argument("-c", "--clan", help="clan")
-parser.add_argument("-o", "--output")
+parser.add_argument("-o", "--output", help="output type", default="info")
 args = parser.parse_args()
 opts = vars(args)
 
@@ -69,7 +69,9 @@ def getCard(cardid):
     #rarity
     cardinfo['rarity'] = str(re.sub('<[^<]+?>', '',
                                     getcard.text.split('Rarity')[2].split('Legality')[0].split('</div>')[1]))
-
+    #text
+    cardinfo['text'] = str(re.sub('<[^<]+?>', '',
+                                  getcard.text.split('Printed Text</div></td><td class="cardlisting mechanics"><div class="shadowdatacurrent" style="">')[1].split('</div>')[0].replace('<b>',' - ')))
     return cardinfo
 
 def doSearchFlex(**kwargs):
@@ -108,16 +110,6 @@ def doSearchByPage(page, **kwargs):
     return goodresults
 
 def doSearch(output='names', **kwargs):
-    # searchurl = 'http://imperialassembly.com/oracle/dosearch'
-    # payload = {"search_13":querystring,
-    #            "search_sel_14[]":type,
-    #            "search_sel_12[]":clan,
-    #            "search_7":"",
-    #            "search_15":"",
-    #            "search_sel_35[]":cardset,
-    #            "search_sel_38[]":"",
-    #            "search_sel_10[]":""}
-    # r = requests.post(searchurl, data=payload)
     r = doSearchFlex(**kwargs)
     if len(re.findall("jquery.js",r.text.split('</script>')[0])) > 0:
         return getCard(str(re.findall("cardid=(\d+)",r.text)[0]))
@@ -143,12 +135,15 @@ def doSearch(output='names', **kwargs):
 
 results = doSearch(**opts)
 if args.output == "info":
+    if type(results) != list:
+        results = [results]
     for each in results:
         print each['title']
         for a in each:
             if a != "title":
                 if each[a] != "none":
                     print "---- %s: %s" % (a, each[a])
+        print ""
 else:
     for each in results:
         print each
