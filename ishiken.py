@@ -17,20 +17,6 @@ parser.add_argument("-o", "--output", help="output type", default="info")
 args = parser.parse_args()
 opts = vars(args)
 
-if args.output not in ['names','ids','info']:
-    print "invalid output specified"
-    sys.exit(1)
-
-argcounter = 0
-for each in opts:
-    if opts[each] is not None:
-        argcounter += 1
-
-if argcounter < 2:
-    print "You must supply at least one search criteria"
-    parser.print_help()
-    sys.exit(1)
-
 def getCard(cardid):
     cardurl = 'http://imperialassembly.com/oracle/docard'
     payload = {'cardid':cardid}
@@ -70,11 +56,15 @@ def getCard(cardid):
     cardinfo['rarity'] = str(re.sub('<[^<]+?>', '',
                                     getcard.text.split('Rarity')[2].split('Legality')[0].split('</div>')[1]))
     #text
-    cardinfo['text'] = str(re.sub('<[^<]+?>', '',
+    try:
+        cardinfo['text'] = str(re.sub('<[^<]+?>', '',
                                   getcard.text.split('Printed Text</div></td><td class="cardlisting mechanics"><div class="shadowdatacurrent" style="">')[1].split('</div>')[0].replace('<b>',' - ')))
+    except:
+        cardinfo['text'] = "extraction failed. please file a bug with your search query"
+
     return cardinfo
 
-def doSearchFlex(**kwargs):
+def doSearchFlex(page=1, **kwargs):
     searchurl = 'http://imperialassembly.com/oracle/dosearch'
     template = {"search_13":"title",
                "search_sel_14[]":"type",
@@ -83,19 +73,18 @@ def doSearchFlex(**kwargs):
                "search_15":"text",
                "search_sel_35[]":"set",
                "search_sel_38[]":"rarity",
-               "search_sel_10[]":"legality",
-               "page":"page"}
+               "search_sel_10[]":"legality"}
     payload = {}
-
     for arg in dict(kwargs):
         for sarg in template:
             if template[sarg] == arg:
                 payload[sarg] = dict(kwargs)[arg]
+    payload['page'] = page
     r = requests.post(searchurl, data=payload)
     return r
 
 def doSearchByPage(page, **kwargs):
-    r = doSearchFlex(**kwargs)
+    r = doSearchFlex(page, **kwargs)
     rawresults = r.text.split('\\n')
     rawmatches = []
     goodresults = []
@@ -133,17 +122,57 @@ def doSearch(output='names', **kwargs):
     pbar.finish()
     return allresults
 
-results = doSearch(**opts)
-if args.output == "info":
-    if type(results) != list:
-        results = [results]
-    for each in results:
-        print each['title']
-        for a in each:
-            if a != "title":
-                if each[a] != "none":
-                    print "---- %s: %s" % (a, each[a])
-        print ""
-else:
-    for each in results:
-        print each
+def newrares(setname):
+    cel = ['Thunderous Acclaim','Twenty Festivals','The New Order','A Line in the Sand','The Coming Storm',
+           'Ivory Edition','Aftermath','Gates of Chaos','Torn Asunder','Honor & Treachery','Seeds of Decay',
+           'The Shadow\'s Embrace','Embers of War','Emperor Edition']
+    uniques = []
+    data = doSearch(set=setname, rarity="Rare", keyword="shugenja", output="info")
+    for each in data:
+        filteredsets = []
+        rel = cel[:cel.index(setname)]
+        print rel
+        print each['sets']
+        for s in each['sets']:
+            if s not in rel:
+                filteredsets.append(s)
+        print s
+        if len(filteredsets) > 1:
+            if each['soulof'] == "none":
+                uniques.append(each['title'])
+    print setname
+    print "total: ", len(data)
+    print "new rares: ", len(uniques)
+
+def main():
+    if args.output not in ['names','ids','info']:
+        print "invalid output specified"
+        sys.exit(1)
+
+    argcounter = 0
+    for each in opts:
+        if opts[each] is not None:
+            argcounter += 1
+
+    if argcounter < 2:
+        print "You must supply at least one search criteria"
+        parser.print_help()
+        sys.exit(1)
+
+    results = doSearch(**opts)
+    if args.output == "info":
+        if type(results) != list:
+            results = [results]
+        for each in results:
+            print each['title']
+            for a in each:
+                if a != "title":
+                    if each[a] != "none":
+                        print "---- %s: %s" % (a, each[a])
+            print ""
+    else:
+        for each in results:
+            print each
+
+if __name__ == "__main__":
+    main()
